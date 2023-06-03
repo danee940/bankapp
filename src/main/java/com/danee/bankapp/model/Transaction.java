@@ -16,6 +16,7 @@ public class Transaction {
         DEBIT, CREDIT
     }
 
+
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;

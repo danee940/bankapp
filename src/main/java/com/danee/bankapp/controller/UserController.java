@@ -1,77 +1,63 @@
 package com.danee.bankapp.controller;
 
-import com.danee.bankapp.model.Account;
 import com.danee.bankapp.model.User;
-import com.danee.bankapp.repository.UserRepository;
-import com.danee.bankapp.service.AccountService;
 import com.danee.bankapp.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.authentication.logout.SecurityContextLogoutHandler;
 import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-import java.security.Principal;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
 
 
 @Controller
 public class UserController {
 
     @Autowired
-    private UserRepository userRepository;
+    private UserService userService;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
-
-    @Autowired
-    private AccountService accountService;
-
-    @GetMapping("/register")
-    public String registerForm(Model model) {
-        model.addAttribute("user", new User());
-        return "register";
-    }
-
-    @PostMapping("/register")
-    public String register(@ModelAttribute User user) {
-        user.setPassword(passwordEncoder.encode(user.getPassword()));
-        userRepository.save(user);
-        return "login";
-    }
 
     @GetMapping("/login")
     public String login() {
         return "login";
     }
 
-    @GetMapping("/logout-success")
-    public String logout() {
-        return "logout";
+    @PostMapping("/login")
+    public String loginPost(@RequestParam String username, @RequestParam String password,
+            RedirectAttributes redirectAttributes, HttpSession session) {
+        User user = userService.findByUsername(username);
+        if (user != null && passwordEncoder.matches(password, user.getPassword())) {
+            // Authentication successful
+            session.setAttribute("user", user);
+            return "redirect:/home";
+        } else {
+            // Authentication failed
+            redirectAttributes.addFlashAttribute("error", "Invalid username or password");
+            return "redirect:/login";
+        }
     }
 
-    @GetMapping("/user")
-    public String user(Principal principal, Model model) {
-        User user = (User) ((Authentication) principal).getPrincipal();
-        model.addAttribute("user", user);
-        return "user";
+    @GetMapping("/logout")
+    public String logout(HttpServletRequest request, HttpServletResponse response) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null) {
+            new SecurityContextLogoutHandler().logout(request, response, authentication);
+        }
+        return "redirect:/login?logout";
     }
 
-    @GetMapping("/create-account")
-    public String createAccountForm(Model model) {
-        model.addAttribute("account", new Account());
-        return "create-account";
-    }
-
-    @PostMapping("/create-account")
-    public String createAccount(@ModelAttribute Account account, Principal principal) {
-        User user = userRepository.findByUsername(principal.getName());
-        account.setUser(user);
-        accountService.save(account);
-        return "redirect:/user";
+    @GetMapping("/home")
+    public String home() {
+        return "home";
     }
 }
-
-
