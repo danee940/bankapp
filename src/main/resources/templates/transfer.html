@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <title>Transfer</title>
+</head>
+<body>
+<h1>Make a Transfer</h1>
+
+<form th:action="@{/transfer}" method="post">
+  <select name="source">
+    <option th:each="account : ${accounts}" th:value="${account.id}" th:text="${account.number}"></option>
+  </select>
+  <select name="target">
+    <option th:each="account : ${accounts}" th:value="${account.id}" th:text="${account.number}"></option>
+  </select>
+  <input type="number" name="amount" placeholder="Amount">
+  <input type="submit" value="Transfer">
+</form>
+
+<a th:href="@{/home}">Home</a>
+</body>
+</html>
